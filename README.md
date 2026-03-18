@@ -67,7 +67,7 @@ Since this is a client-side simulation, no installation is required.
 ---
 
 ## 📄 License
-This tool is for informational and educational purposes only. Data is provided by the USGS.
+This tool is for informational and educational purposes only.
 
 Developed by Andre Luiz Greboge.
 
