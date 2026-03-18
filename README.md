@@ -59,7 +59,7 @@ Since this is a client-side simulation, no installation is required.
 
 1.  **Clone the repository:**
     ```bash
-    git clone [https://github.com/andreluizgreboge/cyberlab.git](https://github.com/andreluizgreboge/cyberlab.git)
+    git clone https://github.com/andreluizgreboge/cyberlab.git
     ```
 2.  **Open the lab:**
     Simply open `index.html` in any modern web browser.
