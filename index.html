@@ -1,0 +1,1149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CyberLab — Operation Tasking</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Caveat:wght@400;500;600;700&family=Share+Tech+Mono&family=Rajdhani:wght@400;500;600;700&family=JetBrains+Mono:wght@300;400;500&display=swap');
+:root {
+  --bg-void: #0d1117;
+  --bg-base: #131920;
+  --bg-surface: #1a2332;
+  --bg-raised: #1f2d40;
+  --bg-overlay: #243447;
+  --border-dim: #1e3a5f;
+  --border-mid: #2a4a70;
+  --border-lit: #3a6090;
+  --text-bright: #e2eaf4;
+  --text-main: #a8bdd4;
+  --text-muted: #5a7a9a;
+  --text-dim: #2e4d6a;
+  --cyan: #4dd9e0;
+  --green: #39d98a;
+  --yellow: #f0c060;
+  --red: #f05a6a;
+  --orange: #e8834a;
+  --purple: #9b7fe8;
+  --prompt: #39d98a;
+  --ch1: #4dd9e0;
+  --ch2: #f05a6a;
+  --ch3: #9b7fe8;
+  --scanline: repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,0.025) 2px,rgba(0,0,0,0.025) 4px);
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+html,body{height:100%;overflow:hidden;}
+body{
+  font-family:'JetBrains Mono',monospace;
+  background:var(--bg-void);
+  color:var(--text-main);
+  background-image:var(--scanline);
+}
+/* ══ DISCLAIMER ══════════════════════════════════════ */
+#disclaimer{
+  position:fixed;top:0;left:0;right:0;z-index:2000;
+  background:linear-gradient(90deg,rgba(240,90,106,0.1),rgba(240,90,106,0.055),rgba(240,90,106,0.1));
+  border-bottom:1px solid rgba(240,90,106,0.22);
+  padding:5px 20px;
+  display:flex;align-items:center;justify-content:center;gap:8px;
+  font-size:0.61rem;color:rgba(240,90,106,0.8);
+  letter-spacing:0.055em;
+  font-family:'Share Tech Mono',monospace;
+}
+#disclaimer strong{color:#f05a6a;}
+/* ══ APP SHELL ═══════════════════════════════════════ */
+#app{
+  display:grid;
+  grid-template-columns:288px 1fr;
+  grid-template-rows:44px 1fr;
+  height:100vh;
+  padding-top:27px;
+}
+/* ══ TOPBAR ══════════════════════════════════════════ */
+#topbar{
+  grid-column:1/-1;
+  background:var(--bg-base);
+  border-bottom:1px solid var(--border-dim);
+  display:flex;align-items:center;
+  padding:0 18px;gap:14px;
+}
+.logo{
+  font-family:'Rajdhani',sans-serif;font-weight:700;font-size:1.08rem;
+  color:var(--cyan);letter-spacing:0.12em;text-transform:uppercase;
+  display:flex;align-items:center;gap:6px;
+}
+.logo .op{color:var(--text-muted);font-size:0.58rem;letter-spacing:0.15em;}
+.logo-sep{width:1px;height:20px;background:var(--border-mid);}
+.mission-name{
+  font-family:'Rajdhani',sans-serif;font-size:0.88rem;font-weight:600;
+  color:var(--yellow);letter-spacing:0.07em;
+}
+.topbar-spacer{flex:1;}
+.top-status{
+  display:flex;align-items:center;gap:6px;
+  font-size:0.59rem;color:var(--text-muted);
+  font-family:'Share Tech Mono',monospace;
+}
+.status-dot{
+  width:6px;height:6px;border-radius:50%;
+  background:var(--green);box-shadow:0 0 6px var(--green);
+  animation:pulse-dot 2s infinite;
+}
+@keyframes pulse-dot{0%,100%{opacity:1;}50%{opacity:0.3;}}
+/* ══ NOTEBOOK TOOLTIP HINT IN TOPBAR ════════════════ */
+.nb-hint{
+  font-size:0.57rem;color:var(--text-dim);
+  font-family:'Share Tech Mono',monospace;
+  border:1px solid var(--border-dim);
+  padding:2px 8px;border-radius:3px;
+  cursor:default;
+  position:relative;
+}
+.nb-hint:hover::after{
+  content:'The orange notebook in the corner tracks your intel. Drag to reposition.';
+  position:absolute;top:calc(100% + 6px);right:0;
+  background:var(--bg-raised);border:1px solid var(--border-mid);
+  color:var(--text-main);font-size:0.65rem;
+  padding:6px 10px;border-radius:4px;white-space:nowrap;
+  z-index:100;pointer-events:none;
+  box-shadow:0 4px 14px rgba(0,0,0,0.4);
+}
+/* ══ SIDEBAR ════════════════════════════════════════ */
+#sidebar{
+  background:var(--bg-base);
+  border-right:1px solid var(--border-dim);
+  overflow-y:auto;display:flex;flex-direction:column;
+}
+#sidebar::-webkit-scrollbar{width:3px;}
+#sidebar::-webkit-scrollbar-thumb{background:var(--border-mid);}
+.chapter-block{border-bottom:1px solid var(--border-dim);}
+.chapter-header{padding:13px 16px 9px;user-select:none;}
+.chapter-meta{display:flex;align-items:center;gap:8px;margin-bottom:5px;}
+.chapter-num{
+  font-family:'Rajdhani',sans-serif;font-size:0.58rem;
+  letter-spacing:0.15em;font-weight:700;
+  padding:2px 7px;border-radius:2px;text-transform:uppercase;
+}
+.ch1 .chapter-num{background:rgba(77,217,224,0.12);color:var(--ch1);border:1px solid rgba(77,217,224,0.25);}
+.ch2 .chapter-num{background:rgba(240,90,106,0.12);color:var(--ch2);border:1px solid rgba(240,90,106,0.25);}
+.ch3 .chapter-num{background:rgba(155,127,232,0.12);color:var(--ch3);border:1px solid rgba(155,127,232,0.25);}
+.chapter-title{
+  font-family:'Rajdhani',sans-serif;font-size:0.83rem;font-weight:600;
+  color:var(--text-bright);letter-spacing:0.05em;
+}
+.chapter-subtitle{
+  font-size:0.57rem;color:var(--text-muted);
+  letter-spacing:0.06em;text-transform:uppercase;margin-top:2px;
+}
+.chapter-progress{
+  height:2px;background:var(--bg-overlay);
+  border-radius:1px;margin-top:8px;overflow:hidden;
+}
+.chapter-progress-fill{
+  height:100%;border-radius:1px;
+  transition:width 0.65s cubic-bezier(0.4,0,0.2,1);
+}
+.ch1 .chapter-progress-fill{background:var(--ch1);}
+.ch2 .chapter-progress-fill{background:var(--ch2);}
+.ch3 .chapter-progress-fill{background:var(--ch3);}
+.mission-list{padding:0 0 6px;}
+.mission-item{
+  display:flex;align-items:flex-start;gap:10px;
+  padding:7px 16px;cursor:pointer;
+  border-left:2px solid transparent;
+  transition:background 0.15s,border-color 0.15s;
+}
+.mission-item:hover:not(.locked){background:rgba(255,255,255,0.028);}
+.mission-item.active.ch1-item{border-left-color:var(--ch1);background:rgba(77,217,224,0.055);}
+.mission-item.active.ch2-item{border-left-color:var(--ch2);background:rgba(240,90,106,0.055);}
+.mission-item.active.ch3-item{border-left-color:var(--ch3);background:rgba(155,127,232,0.055);}
+.mission-item.locked{opacity:0.32;cursor:not-allowed;}
+.mission-item.completed{opacity:0.55;}
+.m-icon{
+  width:15px;height:15px;border-radius:3px;
+  border:1px solid var(--border-mid);
+  display:flex;align-items:center;justify-content:center;
+  font-size:0.53rem;flex-shrink:0;margin-top:2px;transition:all 0.25s;
+}
+.mission-item.completed .m-icon{background:var(--green);border-color:var(--green);color:var(--bg-void);}
+.mission-item.locked .m-icon{border-style:dashed;}
+.m-step{font-size:0.57rem;color:var(--text-dim);letter-spacing:0.08em;text-transform:uppercase;margin-bottom:2px;}
+.m-name{font-size:0.69rem;color:var(--text-main);line-height:1.35;}
+.mission-item.active .m-name{color:var(--text-bright);}
+/* ══ MAIN ════════════════════════════════════════════ */
+#main{display:grid;grid-template-rows:auto 1fr;overflow:hidden;}
+/* ══ BRIEFING PANEL ══════════════════════════════════ */
+#briefing{
+  background:var(--bg-base);
+  border-bottom:1px solid var(--border-dim);
+  padding:16px 22px 14px;
+  overflow-y:auto;max-height:42vh;min-height:0;
+}
+#briefing::-webkit-scrollbar{width:3px;}
+#briefing::-webkit-scrollbar-thumb{background:var(--border-mid);}
+.briefing-header{display:flex;align-items:flex-start;gap:12px;margin-bottom:12px;}
+.briefing-chapter-tag{
+  font-family:'Rajdhani',sans-serif;font-size:0.58rem;
+  letter-spacing:0.15em;font-weight:700;
+  padding:3px 9px;border-radius:2px;text-transform:uppercase;
+  white-space:nowrap;margin-top:3px;flex-shrink:0;
+}
+.tag-ch1{background:rgba(77,217,224,0.12);color:var(--ch1);border:1px solid rgba(77,217,224,0.25);}
+.tag-ch2{background:rgba(240,90,106,0.12);color:var(--ch2);border:1px solid rgba(240,90,106,0.25);}
+.tag-ch3{background:rgba(155,127,232,0.12);color:var(--ch3);border:1px solid rgba(155,127,232,0.25);}
+#briefing-title{
+  font-family:'Rajdhani',sans-serif;font-size:1.25rem;font-weight:700;
+  color:var(--text-bright);line-height:1.15;letter-spacing:0.03em;
+}
+#briefing-story{
+  font-size:0.71rem;color:var(--text-muted);line-height:1.8;
+  margin-bottom:12px;max-width:800px;font-style:italic;
+  border-left:2px solid var(--border-mid);padding-left:11px;
+}
+#briefing-objective{
+  font-size:0.72rem;color:var(--text-main);line-height:1.7;
+  margin-bottom:12px;max-width:800px;
+}
+.objective-card{
+  background:var(--bg-surface);border:1px solid var(--border-mid);
+  border-radius:5px;padding:10px 13px;
+  display:flex;align-items:flex-start;gap:10px;max-width:740px;
+}
+.obj-icon{font-size:0.88rem;flex-shrink:0;margin-top:1px;}
+.obj-label{
+  font-family:'Rajdhani',sans-serif;font-size:0.58rem;font-weight:700;
+  letter-spacing:0.15em;text-transform:uppercase;color:var(--cyan);margin-bottom:4px;
+}
+.obj-text{font-size:0.72rem;color:var(--text-main);line-height:1.55;}
+.obj-cmd{
+  display:inline-block;background:var(--bg-overlay);
+  border:1px solid var(--border-lit);
+  padding:1px 7px;border-radius:3px;
+  color:var(--cyan);font-size:0.74rem;margin-top:5px;
+  font-family:'Share Tech Mono',monospace;
+}
+/* ══ TERMINAL ════════════════════════════════════════ */
+#terminal-wrap{
+  display:flex;flex-direction:column;
+  overflow:hidden;background:var(--bg-void);
+  position:relative;
+}
+#term-titlebar{
+  display:flex;align-items:center;gap:7px;
+  padding:7px 14px;
+  background:var(--bg-surface);border-bottom:1px solid var(--border-dim);
+  flex-shrink:0;
+}
+.tdot{width:9px;height:9px;border-radius:50%;}
+.tdot.r{background:#f05a6a;} .tdot.y{background:#f0c060;} .tdot.g{background:#39d98a;}
+#term-session-label{
+  font-size:0.61rem;color:var(--text-muted);margin-left:5px;
+  font-family:'Share Tech Mono',monospace;letter-spacing:0.03em;
+}
+.term-spacer{flex:1;}
+#btn-clear{
+  font-size:0.57rem;color:var(--text-dim);
+  background:none;border:1px solid var(--border-dim);
+  border-radius:3px;padding:2px 8px;cursor:pointer;
+  font-family:'Share Tech Mono',monospace;
+  transition:all 0.15s;letter-spacing:0.05em;
+}
+#btn-clear:hover{color:var(--text-main);border-color:var(--border-mid);}
+#term-out{
+  flex:1;overflow-y:auto;
+  padding:11px 17px;
+  font-family:'Share Tech Mono',monospace;
+  font-size:0.76rem;line-height:1.78;
+  scroll-behavior:smooth;
+}
+#term-out::-webkit-scrollbar{width:3px;}
+#term-out::-webkit-scrollbar-thumb{background:var(--border-mid);}
+.tl{white-space:pre-wrap;word-break:break-all;}
+.tl-prompt{color:var(--prompt);}
+.tl-out {color:var(--text-main);}
+.tl-err {color:var(--red);}
+.tl-hint {color:var(--yellow);}
+.tl-ok {color:var(--green);}
+.tl-info {color:var(--cyan);}
+.tl-muted {color:var(--text-muted);}
+.tl-story {color:var(--orange);font-style:italic;}
+.tl-bright{color:var(--text-bright);}
+.tl-flag {color:var(--yellow);font-weight:bold;}
+.tl-div {color:var(--border-mid);}
+.tl-empty {line-height:0.5;user-select:none;}
+/* new-mission separator injected automatically */
+.tl-sep-block{
+  display:flex;align-items:center;gap:8px;
+  margin:6px 0 2px;color:var(--border-mid);font-size:0.7rem;
+}
+.tl-sep-block .sep-line{flex:1;height:1px;background:var(--border-dim);}
+#term-in-row{
+  display:flex;align-items:center;
+  padding:9px 17px;
+  border-top:1px solid var(--border-dim);
+  background:var(--bg-base);gap:8px;flex-shrink:0;
+}
+#prompt-txt{
+  color:var(--prompt);font-family:'Share Tech Mono',monospace;
+  font-size:0.76rem;white-space:nowrap;user-select:none;
+}
+#term-in{
+  flex:1;background:none;border:none;outline:none;
+  color:var(--text-bright);
+  font-family:'Share Tech Mono',monospace;font-size:0.76rem;
+  caret-color:var(--cyan);
+}
+/* ══ FLASH ANIMATION ═════════════════════════════════ */
+@keyframes flash-ok{0%{background:rgba(57,217,138,0.12);}100%{background:transparent;}}
+.flash-success{animation:flash-ok 0.9s ease-out;}
+/* ══ EVIDENCE NOTEBOOK ═══════════════════════════════ */
+#notebook{
+  position:fixed;
+  bottom:22px;right:24px;
+  width:218px;
+  min-height:160px;
+  background:#f5c67a;
+  background-image:
+    repeating-linear-gradient(
+      transparent,transparent 27px,
+      rgba(160,120,40,0.18) 27px,rgba(160,120,40,0.18) 28px
+    );
+  border-radius:2px 4px 4px 2px;
+  box-shadow:
+    3px 6px 18px rgba(0,0,0,0.38),
+    1px 2px 6px rgba(0,0,0,0.22),
+    inset -1px 0 3px rgba(0,0,0,0.06);
+  transform:rotate(2.5deg);
+  transform-origin:bottom right;
+  z-index:900;
+  cursor:grab;
+  user-select:none;
+  transition:box-shadow 0.2s,transform 0.2s;
+  padding:0;
+  overflow:visible;
+}
+#notebook:active{cursor:grabbing;}
+#notebook.dragging{
+  box-shadow:5px 10px 28px rgba(0,0,0,0.5);
+  transform:rotate(1.5deg) scale(1.02);
+}
+/* Red margin line on the left */
+#notebook::before{
+  content:'';
+  position:absolute;left:30px;top:0;bottom:0;
+  width:1px;background:rgba(220,80,80,0.45);
+  pointer-events:none;
+}
+/* Torn top edge using clip-path on a pseudo */
+#notebook-inner{
+  padding:10px 10px 14px 36px;
+}
+#notebook-label{
+  font-family:'Caveat',cursive;
+  font-size:0.78rem;
+  font-weight:700;
+  color:rgba(100,60,10,0.6);
+  text-transform:uppercase;
+  letter-spacing:0.1em;
+  margin-bottom:4px;
+  padding-bottom:4px;
+  border-bottom:1px solid rgba(160,120,40,0.25);
+}
+#notebook-entries{
+  display:flex;flex-direction:column;gap:0;
+  padding-top:4px;
+}
+.nb-entry{
+  font-family:'Caveat',cursive;
+  font-size:1.02rem;
+  font-weight:500;
+  line-height:28px; /* matches the ruled line spacing */
+  color:#3a2000;
+  opacity:0;
+  transform:translateY(4px);
+  transition:opacity 0.5s ease,transform 0.5s ease;
+  white-space:nowrap;
+}
+.nb-entry.visible{
+  opacity:1;
+  transform:translateY(0);
+}
+.nb-entry .nb-key{color:#7a3a00;font-weight:700;}
+.nb-entry .nb-val{color:#2a1400;}
+/* little sticky-tape accent at top */
+#notebook-tape{
+  position:absolute;top:-8px;left:50%;
+  transform:translateX(-50%) rotate(-1deg);
+  width:52px;height:16px;
+  background:rgba(255,255,200,0.55);
+  border:1px solid rgba(200,190,120,0.6);
+  border-radius:1px;
+  pointer-events:none;
+}
+/* ══ MISSION COMPLETE OVERLAY ════════════════════════ */
+#mission-complete{
+  display:none;position:fixed;inset:0;z-index:1500;
+  background:rgba(10,14,20,0.93);
+  align-items:center;justify-content:center;flex-direction:column;gap:16px;
+  text-align:center;
+}
+#mission-complete.show{display:flex;}
+.mc-title{
+  font-family:'Rajdhani',sans-serif;font-size:2.6rem;font-weight:700;
+  color:var(--green);letter-spacing:0.15em;
+  text-shadow:0 0 40px rgba(57,217,138,0.35);
+}
+.mc-sub{
+  font-family:'Share Tech Mono',monospace;font-size:0.8rem;
+  color:var(--text-muted);letter-spacing:0.07em;max-width:420px;
+}
+.mc-flag{
+  font-family:'Share Tech Mono',monospace;font-size:0.95rem;
+  color:var(--yellow);
+  background:rgba(240,192,96,0.08);
+  border:1px solid rgba(240,192,96,0.28);
+  padding:10px 22px;border-radius:5px;letter-spacing:0.06em;
+}
+.mc-btn{
+  margin-top:6px;
+  font-family:'Rajdhani',sans-serif;font-size:0.85rem;font-weight:600;
+  letter-spacing:0.12em;text-transform:uppercase;
+  color:var(--bg-void);background:var(--green);
+  border:none;border-radius:4px;padding:10px 28px;cursor:pointer;
+  transition:opacity 0.2s;
+}
+.mc-btn:hover{opacity:0.85;}
+</style>
+</head>
+<body>
+<!-- DISCLAIMER -->
+<div id="disclaimer">
+  <span>⚠️</span>
+  <span><strong>EDUCATIONAL SIMULATION:</strong> This is a 100% simulated environment for learning purposes. No real network connections are made. Practice ethically.</span>
+</div>
+<div id="app">
+  <!-- TOPBAR -->
+  <header id="topbar">
+    <div class="logo"><span class="op">OP //</span> CYBERLAB</div>
+    <div class="logo-sep"></div>
+    <div class="mission-name">CyberLab Training Platform</div>
+    <div class="topbar-spacer"></div>
+    <div class="nb-hint">📓 Evidence Notebook</div>
+    <div class="top-status"><div class="status-dot"></div><span>SANDBOX ACTIVE</span></div>
+  </header>
+  <!-- SIDEBAR -->
+  <nav id="sidebar"></nav>
+  <!-- MAIN -->
+  <div id="main">
+    <div id="briefing">
+      <div class="briefing-header">
+        <span id="briefing-tag" class="briefing-chapter-tag tag-ch1">Chapter 1</span>
+        <div id="briefing-title">Welcome, Operator</div>
+      </div>
+      <div id="briefing-story">You've been assigned to Operation: Ghost Signal. A threat actor exfiltrated sensitive data from an internal server. Trace the breach, recover evidence, and identify the responsible party.</div>
+      <div id="briefing-objective">Complete each objective in sequence. The terminal keeps your full session history — use it to track your findings.</div>
+      <div class="objective-card" id="obj-card">
+        <span class="obj-icon">📡</span>
+        <div>
+          <div class="obj-label">Standing By</div>
+          <div class="obj-text">Your first objective will begin automatically. Type <span class="obj-cmd">help</span> to see available commands.</div>
+        </div>
+      </div>
+    </div>
+    <div id="terminal-wrap">
+      <div id="term-titlebar">
+        <div class="tdot r"></div><div class="tdot y"></div><div class="tdot g"></div>
+        <span id="term-session-label">operator@cyberlab — bash</span>
+        <div class="term-spacer"></div>
+        <button id="btn-clear" onclick="clearTerm()" title="Manually clear the terminal output">clear</button>
+      </div>
+      <div id="term-out"></div>
+      <div id="term-in-row">
+        <span id="prompt-txt">operator@workstation:~$</span>
+        <input id="term-in" type="text" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" placeholder="enter command..." />
+      </div>
+    </div>
+  </div>
+</div>
+<!-- EVIDENCE NOTEBOOK -->
+<div id="notebook">
+  <div id="notebook-tape"></div>
+  <div id="notebook-inner">
+    <div id="notebook-label">📋 Field Notes</div>
+    <div id="notebook-entries">
+      <!-- entries injected by JS -->
+    </div>
+  </div>
+</div>
+<!-- MISSION COMPLETE -->
+<div id="mission-complete">
+  <div class="mc-title">MISSION COMPLETE</div>
+  <div class="mc-sub">OPERATION: GHOST SIGNAL — ALL OBJECTIVES ACHIEVED</div>
+  <div class="mc-flag">FINAL FLAG: GHOST{1nv3st1g4t10n_C0mpl3t3_GG}</div>
+  <div class="mc-sub" style="margin-top:4px">You traced the breach from your workstation to the attacker's real-world identity. Every command was a genuine investigative technique. Well done, operator.</div>
+  <button class="mc-btn" onclick="resetMission()">↺ Restart Mission</button>
+</div>
+<script>
+'use strict';
+// ═══════════════════════════════════════════════════════
+// MISSION DATA
+// ═══════════════════════════════════════════════════════
+const CHAPTERS = [
+  {
+    id:'ch1', num:'Chapter 01', title:'Local Recon', subtitle:'Linux Basics',
+    cssClass:'ch1', itemClass:'ch1-item', tagClass:'tag-ch1',
+    missions:[
+      {
+        id:'c1m1', step:'Obj 1.1', name:'Locate yourself',
+        command:'pwd', aliases:[],
+        story:'"The first rule: know your position before you move."',
+        briefing:'You\'ve just initialized your analyst workstation. Before anything else, confirm your current location in the filesystem.',
+        objLabel:'Confirm Current Directory',
+        objText:'Use the print-working-directory command to see exactly where you are.',
+        simulate:()=>[['/home/operator','tl-out']],
+        successMsg:'📍 You are at /home/operator — your home base. Now look around.',
+        notebookEntry: null
+      },
+      {
+        id:'c1m2', step:'Obj 1.2', name:'Survey the area',
+        command:'ls', aliases:[],
+        story:'"Check every corner. Threat actors hide tools in plain sight."',
+        briefing:'List the contents of your home directory. Look for anything that seems relevant to the investigation.',
+        objLabel:'List Directory Contents',
+        objText:'Run the list command to see what files and directories are present.',
+        simulate:()=>[['Desktop Documents intel_dump notes.txt tools','tl-out']],
+        successMsg:'🔍 Found: intel_dump, notes.txt. Let\'s dig deeper — read that notes file.',
+        notebookEntry: null
+      },
+      {
+        id:'c1m3', step:'Obj 1.3', name:'Read the briefing note',
+        command:'cat notes.txt', aliases:[],
+        story:'"Files left behind reveal intent. Always read what\'s on the desk."',
+        briefing:'You spotted notes.txt. Files from previous analysts often contain critical context about the investigation.',
+        objLabel:'Read notes.txt',
+        objText:'Use the cat command to print the contents of notes.txt.',
+        simulate:()=>[
+          ['=== ANALYST NOTES — DO NOT SHARE ===','tl-bright'],
+          ['Date: 2024-03-14','tl-muted'],
+          ['','tl-empty'],
+          ['Suspicious traffic detected from internal segment.','tl-out'],
+          ['A file "leaked_evidence.jpg" was exfiltrated to an unknown host.','tl-out'],
+          ['Source IP not yet confirmed.','tl-out'],
+          ['','tl-empty'],
+          ['→ Check hidden files in this directory for target details.','tl-hint'],
+          ['— A.','tl-muted'],
+        ],
+        successMsg:'📝 Key intel: leaked_evidence.jpg was stolen. A hidden file may have the target IP.',
+        notebookEntry: null
+      },
+      {
+        id:'c1m4', step:'Obj 1.4', name:'Find hidden intelligence',
+        command:'ls -a', aliases:['ls -la','ls -al'],
+        story:'"What you cannot see is usually more valuable than what you can."',
+        briefing:'In Linux, files starting with a dot (.) are hidden from regular `ls`. The -a flag reveals them all. Hidden files often contain sensitive configuration — or in this case, a dead drop from your handler.',
+        objLabel:'Reveal Hidden Files',
+        objText:'Use ls with the -a flag to reveal hidden files in the current directory.',
+        simulate:()=>[['. .. .bash_history .target_notes Desktop Documents intel_dump notes.txt tools','tl-out']],
+        successMsg:'🕵️ There it is — .target_notes is hidden. Read it now.',
+        notebookEntry: null
+      },
+      {
+        id:'c1m5', step:'Obj 1.5', name:'Read target intelligence',
+        command:'cat .target_notes', aliases:[],
+        story:'"The dead drop. Target IP and an encoded credential. Phase two begins."',
+        briefing:'.target_notes was left by your handler as a covert dead drop. It contains the target host IP and an encoded access credential. You\'ll need both for the intrusion phase.',
+        objLabel:'Retrieve Target Intel',
+        objText:'Use cat to read the hidden .target_notes file.',
+        simulate:()=>[
+          ['=== TARGET INTELLIGENCE — EYES ONLY ===','tl-bright'],
+          ['','tl-empty'],
+          ['Target Host : 10.0.0.5','tl-info'],
+          ['Open Ports : TBD — run recon scan first','tl-muted'],
+          ['Auth Method : SSH','tl-out'],
+          ['','tl-empty'],
+          ['Encoded credential found in exfil log:','tl-out'],
+          [' c2hhZG93QWdlbnQ4OA==','tl-flag'],
+          ['','tl-empty'],
+          ['Decode before use. Chapter 2 cleared for access.','tl-hint'],
+          ['— Control','tl-muted'],
+        ],
+        successMsg:'🔑 Target: 10.0.0.5 | Encoded cred: c2hhZG93QWdlbnQ4OA== — Chapter 1 complete.',
+        notebookEntry: { key:'Target IP', val:'10.0.0.5' }
+      }
+    ]
+  },
+  {
+    id:'ch2', num:'Chapter 02', title:'System Intrusion', subtitle:'Pentest',
+    cssClass:'ch2', itemClass:'ch2-item', tagClass:'tag-ch2',
+    missions:[
+      {
+        id:'c2m1', step:'Obj 2.1', name:'Scan the target host',
+        command:'nmap 10.0.0.5', aliases:['nmap 10.0.0.5'],
+        story:'"Before you knock, you need to know which doors are open."',
+        briefing:'You have the target IP: 10.0.0.5. Before attempting access, discover which services are exposed. Each open port is a potential entry vector.',
+        objLabel:'Port Scan Target',
+        objText:'Run nmap against the target IP to discover open ports and services.',
+        simulate:()=>[
+          ['Starting Nmap 7.94 — https://nmap.org','tl-muted'],
+          ['Nmap scan report for 10.0.0.5','tl-bright'],
+          ['Host is up (0.003s latency).','tl-out'],
+          ['','tl-empty'],
+          ['PORT STATE SERVICE VERSION','tl-bright'],
+          ['22/tcp open ssh OpenSSH 8.2 (protocol 2.0)','tl-out'],
+          ['80/tcp open http nginx 1.18.0','tl-out'],
+          ['3306/tcp closed mysql','tl-muted'],
+          ['','tl-empty'],
+          ['Nmap done: 1 IP address (1 host up) in 2.71s','tl-muted'],
+        ],
+        successMsg:'🎯 SSH (22) and HTTP (80) are open. SSH is your entry point. Decode the credential next.',
+        notebookEntry: { key:'Open Ports', val:'22 (SSH), 80 (HTTP)' }
+      },
+      {
+        id:'c2m2', step:'Obj 2.2', name:'Decode the credential',
+        command:"echo 'c2hhZG93QWdlbnQ4OA==' | base64 -d",
+        aliases:["echo c2hhZG93QWdlbnQ4OA== | base64 -d","echo 'c2hhZG93QWdlbnQ4OA==' | base64 --decode"],
+        story:'"Encoding is not encryption. Anyone with a terminal can read this in seconds."',
+        briefing:'The credential in .target_notes is Base64-encoded — a common shortcut that offers zero security. The pipe (|) sends echo\'s output directly into base64 -d for instant decoding.',
+        objLabel:'Decode Base64 Credential',
+        objText:"Pipe the encoded string from .target_notes into base64 -d.",
+        simulate:()=>[['shadowAgent88','tl-flag']],
+        successMsg:'🔓 Decoded: shadowAgent88 — that\'s the SSH password. Use it.',
+        notebookEntry: { key:'Password', val:'shadowAgent88' }
+      },
+      {
+        id:'c2m3', step:'Obj 2.3', name:'Infiltrate via SSH',
+        command:'ssh agent@10.0.0.5', aliases:[],
+        story:'"Authenticated. You\'re inside. Move quietly — don\'t trigger alerts."',
+        briefing:'Port 22 is open, you have the password. SSH gives you an encrypted remote shell on the target. Format: ssh username@hostname. The username "agent" matches the decoded credential pattern.',
+        objLabel:'Connect via SSH',
+        objText:'Use SSH to log into the target host as user "agent".',
+        simulate:()=>[
+          ["The authenticity of host '10.0.0.5' cannot be established.",'tl-muted'],
+          ['ECDSA key fingerprint is SHA256:Gh7xK2mNpQ1rL4vW9.',"tl-muted"],
+          ['Connecting... yes','tl-muted'],
+          ['','tl-empty'],
+          ["agent@10.0.0.5's password: ••••••••••••••",'tl-out'],
+          ['','tl-empty'],
+          ['Ubuntu 22.04.3 LTS — Internal Ops Server','tl-info'],
+          ['Last login: Thu Mar 14 22:47:01 2024 from 192.168.1.99','tl-muted'],
+          ['','tl-empty'],
+          ['agent@ops-server:~$','tl-prompt'],
+        ],
+        successMsg:'✅ Shell acquired on 10.0.0.5. You are now inside the target system.',
+        notebookEntry: { key:'SSH User', val:'agent@10.0.0.5' }
+      },
+      {
+        id:'c2m4', step:'Obj 2.4', name:'Locate the evidence file',
+        command:'ls', aliases:[],
+        story:'"They left in a hurry. The evidence is still here — they didn\'t clean up."',
+        briefing:'You\'re on the remote server. The analyst note mentioned leaked_evidence.jpg was exfiltrated from this machine. Confirm it\'s still present — attackers often leave copies.',
+        objLabel:'List Remote Directory',
+        objText:'Run ls to see what files exist on the compromised server.',
+        simulate:()=>[['backup.tar.gz leaked_evidence.jpg server_logs web_config.env','tl-out']],
+        successMsg:'📁 Found it — leaked_evidence.jpg is on the server. Proceed to forensic analysis in Chapter 3.',
+        notebookEntry: { key:'Evidence File', val:'leaked_evidence.jpg' }
+      }
+    ]
+  },
+  {
+    id:'ch3', num:'Chapter 03', title:'Digital Forensics', subtitle:'OSINT',
+    cssClass:'ch3', itemClass:'ch3-item', tagClass:'tag-ch3',
+    missions:[
+      {
+        id:'c3m1', step:'Obj 3.1', name:'Extract image metadata',
+        command:'exiftool leaked_evidence.jpg', aliases:[],
+        story:'"Every photo taken on a smartphone is a silent confession with GPS coordinates."',
+        briefing:'exiftool reads the EXIF metadata embedded in image files. Smartphones silently record GPS location, device model, timestamp, and often the owner\'s name. This data survives most uploads and is frequently overlooked.',
+        objLabel:'Analyze Image Metadata',
+        objText:'Use exiftool on leaked_evidence.jpg to extract all embedded metadata.',
+        simulate:()=>[
+          ['ExifTool Version Number : 12.76','tl-muted'],
+          ['File Name : leaked_evidence.jpg','tl-out'],
+          ['File Type : JPEG','tl-out'],
+          ['','tl-empty'],
+          ['Make : Samsung','tl-out'],
+          ['Camera Model : Galaxy S23 Ultra','tl-out'],
+          ['Owner Name : Example User','tl-flag'],
+          ['','tl-empty'],
+          ['Date/Time Original : 2024:03:14 22:43:07','tl-out'],
+          ['','tl-empty'],
+          ['GPS Latitude : 0 deg 0\' 0.00" N','tl-info'],
+          ['GPS Longitude : 0 deg 0\' 0.00" W','tl-info'],
+          ['GPS Position : 0.0000000 N, 0.0000000 W','tl-info'],
+          [' → Somewhere in the middle of nowhere','tl-hint'],
+          ['','tl-empty'],
+          ['Author Tag : attacker@example.com','tl-flag'],
+          ['Comment : internal-review — example.com','tl-flag'],
+        ],
+        successMsg:'🗺️ Metadata cracked! Author: attacker at attacker@example.com — city, state. Investigate that domain.',
+        notebookEntry: { key:'Suspect', val:'Example User — example.com' }
+      },
+      {
+        id:'c3m2', step:'Obj 3.2', name:'Identify the domain owner',
+        command:'whois example.com', aliases:[],
+        story:'"A domain registration is a public record. And public records are forever."',
+        briefing:'example.com appeared in the image metadata. WHOIS queries the global domain registration database and returns the registrant\'s real name, email, phone number, and physical address. This is the final attribution step.',
+        objLabel:'WHOIS Domain Lookup',
+        objText:'Run whois against example.com to identify who registered the domain.',
+        simulate:()=>[
+          ['Domain Name: example.com','tl-bright'],
+          ['Registry Domain ID: D503300001-LROR','tl-muted'],
+          ['Registrar: Example Registrar','tl-out'],
+          ['','tl-empty'],
+          ['Creation Date: 1995-08-14T04:00:00Z','tl-muted'],
+          ['Expiry Date : 2026-08-13T04:00:00Z','tl-muted'],
+          ['','tl-empty'],
+          ['Registrant Name : Example Attacker','tl-flag'],
+          ['Registrant Organization : Example Org','tl-flag'],
+          ['Registrant Email : attacker@example.com','tl-flag'],
+          ['Registrant Phone : +1-555-123-4567','tl-out'],
+          ['Registrant Address : 1234 Example Road','tl-info'],
+          ['','tl-empty'],
+          ['Name Server: exampleServer','tl-muted'],
+          ['DNSSEC: unsigned','tl-muted'],
+        ],
+        successMsg:'🎯 SUSPECT CONFIRMED: Example Attacker, attacker@example.com. Name matches EXIF. Location matches GPS. Case closed.',
+        notebookEntry: { key:'Identity', val:'Example Attacker, Example City' }
+      }
+    ]
+  }
+];
+// ═══════════════════════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════════════════════
+const STORAGE_KEY = 'ghost_signal_v2';
+function defaultState(){
+  return { completedIds:[], currentMissionId: CHAPTERS[0].missions[0].id };
+}
+let S = (()=>{
+  try{ const r=localStorage.getItem(STORAGE_KEY); return r?JSON.parse(r):defaultState(); }
+  catch{ return defaultState(); }
+})();
+function saveState(){ try{ localStorage.setItem(STORAGE_KEY,JSON.stringify(S)); }catch{} }
+function flatMissions(){
+  const a=[];
+  CHAPTERS.forEach(ch=>ch.missions.forEach(m=>a.push({...m,chapter:ch})));
+  return a;
+}
+function getMissionById(id){
+  for(const ch of CHAPTERS){ for(const m of ch.missions){ if(m.id===id) return {mission:m,chapter:ch}; } }
+  return null;
+}
+function isUnlocked(id){
+  const flat=flatMissions(); const idx=flat.findIndex(m=>m.id===id);
+  if(idx===0) return true;
+  return S.completedIds.includes(flat[idx-1].id);
+}
+function isCompleted(id){ return S.completedIds.includes(id); }
+// ═══════════════════════════════════════════════════════
+// NOTEBOOK
+// ═══════════════════════════════════════════════════════
+const NOTEBOOK_SCHEMA = [
+  { id:'c1m5', key:'Target IP', val:'10.0.0.5' },
+  { id:'c2m1', key:'Open Ports', val:'22 (SSH), 80 (HTTP)' },
+  { id:'c2m2', key:'Password', val:'shadowAgent88' },
+  { id:'c2m3', key:'SSH User', val:'agent@10.0.0.5' },
+  { id:'c2m4', key:'Evidence File', val:'leaked_evidence.jpg' },
+  { id:'c3m1', key:'Suspect', val:'Example User' },
+  { id:'c3m1', key:'Domain', val:'example.com' },
+  { id:'c3m2', key:'Full Name', val:'Example Attacker' },
+  { id:'c3m2', key:'Location', val:'Example City' },
+];
+function rebuildNotebook(){
+  const container = document.getElementById('notebook-entries');
+  container.innerHTML = '';
+  NOTEBOOK_SCHEMA.forEach(entry=>{
+    const div = document.createElement('div');
+    div.className = 'nb-entry';
+    div.id = 'nb-' + entry.id + '-' + entry.key.replace(/\s/g,'_');
+    div.innerHTML = `<span class="nb-key">${entry.key}:</span> <span class="nb-val">${entry.val}</span>`;
+    container.appendChild(div);
+    if(isCompleted(entry.id)){
+      div.classList.add('visible');
+    }
+  });
+}
+function revealNotebookFor(missionId){
+  NOTEBOOK_SCHEMA.forEach(entry=>{
+    if(entry.id === missionId){
+      const el = document.getElementById('nb-' + entry.id + '-' + entry.key.replace(/\s/g,'_'));
+      if(el) setTimeout(()=>el.classList.add('visible'), 300);
+    }
+  });
+}
+// ═══════════════════════════════════════════════════════
+// NOTEBOOK DRAG
+// ═══════════════════════════════════════════════════════
+(function(){
+  const nb = document.getElementById('notebook');
+  let dragging=false, ox=0, oy=0;
+  nb.addEventListener('mousedown', e=>{
+    dragging=true;
+    const rect=nb.getBoundingClientRect();
+    ox=e.clientX-rect.left; oy=e.clientY-rect.top;
+    nb.classList.add('dragging');
+    e.preventDefault();
+  });
+  document.addEventListener('mousemove', e=>{
+    if(!dragging) return;
+    nb.style.right='auto'; nb.style.bottom='auto';
+    nb.style.left=(e.clientX-ox)+'px';
+    nb.style.top=(e.clientY-oy)+'px';
+  });
+  document.addEventListener('mouseup', ()=>{
+    dragging=false; nb.classList.remove('dragging');
+  });
+})();
+// ═══════════════════════════════════════════════════════
+// SIDEBAR
+// ═══════════════════════════════════════════════════════
+function renderSidebar(){
+  const sb=document.getElementById('sidebar');
+  sb.innerHTML='';
+  CHAPTERS.forEach(ch=>{
+    const done=ch.missions.filter(m=>isCompleted(m.id)).length;
+    const pct=Math.round((done/ch.missions.length)*100);
+    const block=document.createElement('div');
+    block.className=`chapter-block ${ch.cssClass}`;
+    block.innerHTML=`
+      <div class="chapter-header">
+        <div class="chapter-meta"><span class="chapter-num">${ch.num}</span></div>
+        <div class="chapter-title">${ch.title}</div>
+        <div class="chapter-subtitle">${ch.subtitle}</div>
+        <div class="chapter-progress"><div class="chapter-progress-fill" style="width:${pct}%"></div></div>
+      </div>
+      <div class="mission-list" id="mlist-${ch.id}"></div>`;
+    sb.appendChild(block);
+    const mlist=block.querySelector(`#mlist-${ch.id}`);
+    ch.missions.forEach(m=>{
+      const unlocked=isUnlocked(m.id);
+      const done=isCompleted(m.id);
+      const active=S.currentMissionId===m.id;
+      const item=document.createElement('div');
+      item.className=`mission-item ${ch.itemClass}${active?' active':''}${done?' completed':''}${!unlocked?' locked':''}`;
+      item.innerHTML=`
+        <div class="m-icon">${done?'✓':unlocked?'':''}</div>
+        <div class="m-text">
+          <div class="m-step">${m.step}</div>
+          <div class="m-name">${m.name}</div>
+        </div>`;
+      if(unlocked) item.onclick=()=>jumpToMission(m.id,true);
+      else item.title='Complete the previous objective first.';
+      mlist.appendChild(item);
+    });
+  });
+}
+// ═══════════════════════════════════════════════════════
+// BRIEFING
+// ═══════════════════════════════════════════════════════
+function renderBriefing(id){
+  const {mission:m,chapter:ch}=getMissionById(id);
+  const tag=document.getElementById('briefing-tag');
+  tag.textContent=ch.num+' — '+ch.subtitle;
+  tag.className=`briefing-chapter-tag ${ch.tagClass}`;
+  document.getElementById('briefing-title').textContent=m.step+': '+m.name;
+  document.getElementById('briefing-story').textContent=m.story;
+  document.getElementById('briefing-objective').innerHTML=
+    m.briefing.replace(/`([^`]+)`/g,'<code style="background:var(--bg-overlay);padding:1px 6px;border-radius:3px;color:var(--cyan)">$1</code>');
+  document.getElementById('obj-card').innerHTML=`
+    <span class="obj-icon">⚡</span>
+    <div>
+      <div class="obj-label">${m.objLabel}</div>
+      <div class="obj-text">${m.objText}</div>
+      <span class="obj-cmd">${m.command}</span>
+    </div>`;
+}
+// ═══════════════════════════════════════════════════════
+// JUMP TO MISSION
+// ═══════════════════════════════════════════════════════
+function jumpToMission(id, fromSidebar=false){
+  if(!isUnlocked(id)){ printLine('🔒 Objective locked. Complete the previous one first.','tl-hint'); return; }
+  S.currentMissionId=id;
+  saveState();
+  renderBriefing(id);
+  renderSidebar();
+  document.getElementById('term-in').focus();
+}
+// ═══════════════════════════════════════════════════════
+// TERMINAL ENGINE
+// ═══════════════════════════════════════════════════════
+let cmdHistory=[], histIdx=-1, cwd='/home/operator';
+function scrollToBottom(){
+  const el=document.getElementById('term-out');
+  el.scrollTop=el.scrollHeight;
+}
+function printLine(text,cls='tl-out'){
+  const out=document.getElementById('term-out');
+  const d=document.createElement('div');
+  d.className=`tl ${cls}`;
+  if(cls==='tl-empty'){ d.innerHTML=' '; d.style.fontSize='0.3rem'; }
+  else d.textContent=text;
+  out.appendChild(d);
+  scrollToBottom();
+}
+function printSep(label){
+  const out=document.getElementById('term-out');
+  const d=document.createElement('div');
+  d.className='tl-sep-block';
+  d.innerHTML=`<div class="sep-line"></div><span>${label}</span><div class="sep-line"></div>`;
+  out.appendChild(d);
+  scrollToBottom();
+}
+function clearTerm(){ document.getElementById('term-out').innerHTML=''; }
+function updatePrompt(){
+  const short=cwd.replace('/home/operator','~');
+  document.getElementById('prompt-txt').textContent=`operator@workstation:${short}$`;
+}
+function normalize(s){ return s.trim().replace(/\s+/g,' '); }
+// ── COMMAND ROUTER ────────────────────────────────────
+function handleInput(raw){
+  const input=normalize(raw);
+  if(!input) return;
+  cmdHistory.unshift(input); histIdx=-1;
+  const short=cwd.replace('/home/operator','~');
+  printLine(`operator@workstation:${short}$ ${input}`,'tl-prompt');
+  if(input==='help'){ showHelp(); return; }
+  if(input==='clear'){ clearTerm(); return; }
+  if(input==='whoami'){ printLine('operator','tl-out'); return; }
+  if(input==='pwd'){
+    printLine(cwd,'tl-out');
+    tryComplete('pwd',input);
+    return;
+  }
+  if(input.startsWith('cd')){
+    const arg=input.slice(3).trim();
+    if(!arg||arg==='~') cwd='/home/operator';
+    else if(arg==='..'){
+      const p=cwd.split('/').filter(Boolean);
+      if(p.length>1){p.pop();cwd='/'+p.join('/');}
+    } else {
+      cwd=cwd.replace(/\/$/,'')+'/'+arg;
+    }
+    updatePrompt();
+    tryComplete('cd',input);
+    return;
+  }
+  if(input==='ls'){
+    printLine('Desktop Documents intel_dump notes.txt tools','tl-out');
+    tryComplete('ls',input);
+    return;
+  }
+  if(input==='ls -a'||input==='ls -la'||input==='ls -al'){
+    printLine('. .. .bash_history .target_notes Desktop Documents intel_dump notes.txt tools','tl-out');
+    tryComplete('ls -a',input);
+    return;
+  }
+  if(input.startsWith('cat ')){
+    runCat(input.slice(4).trim(),input);
+    return;
+  }
+  if(input.startsWith('nmap')){
+    const arg=input.slice(4).trim();
+    if(!arg){printLine('Usage: nmap <target>','tl-err');return;}
+    execSimulated('nmap 10.0.0.5',input);
+    return;
+  }
+  if(input.includes('base64')){
+    execSimulated("echo 'c2hhZG93QWdlbnQ4OA==' | base64 -d",input);
+    return;
+  }
+  if(input.startsWith('ssh ')){
+    execSimulated('ssh agent@10.0.0.5',input);
+    return;
+  }
+  if(input.startsWith('exiftool')){
+    execSimulated('exiftool leaked_evidence.jpg',input);
+    return;
+  }
+  if(input.startsWith('whois')){
+    execSimulated('whois example.com',input);
+    return;
+  }
+  if(input==='history'){
+    cmdHistory.slice(0,20).forEach((c,i)=>printLine(` ${String(i+1).padStart(3)} ${c}`,'tl-muted'));
+    return;
+  }
+  if(input.startsWith('mkdir ')){
+    printLine(`Directory '${input.slice(6).trim()}' created.`,'tl-out');
+    return;
+  }
+  printLine(`${input.split(' ')[0]}: command not found`,'tl-err');
+  giveHint(input);
+}
+function runCat(file,raw){
+  const catMap={
+    'notes.txt':()=>{
+      [
+        ['=== ANALYST NOTES — DO NOT SHARE ===','tl-bright'],
+        ['Date: 2024-03-14','tl-muted'],['','tl-empty'],
+        ['Suspicious traffic detected from internal segment.','tl-out'],
+        ['A file "leaked_evidence.jpg" was exfiltrated to an unknown host.','tl-out'],
+        ['Source IP not yet confirmed.','tl-out'],['','tl-empty'],
+        ['→ Check hidden files in this directory for target details.','tl-hint'],
+        ['— A.','tl-muted'],
+      ].forEach(([t,c])=>printLine(t,c));
+      tryComplete('cat notes.txt',raw);
+    },
+    '.target_notes':()=>{
+      [
+        ['=== TARGET INTELLIGENCE — EYES ONLY ===','tl-bright'],['','tl-empty'],
+        ['Target Host : 10.0.0.5','tl-info'],
+        ['Open Ports : TBD — run recon scan first','tl-muted'],
+        ['Auth Method : SSH','tl-out'],['','tl-empty'],
+        ['Encoded credential found in exfil log:','tl-out'],
+        [' c2hhZG93QWdlbnQ4OA==','tl-flag'],['','tl-empty'],
+        ['Decode before use. Chapter 2 cleared for access.','tl-hint'],
+        ['— Control','tl-muted'],
+      ].forEach(([t,c])=>printLine(t,c));
+      tryComplete('cat .target_notes',raw);
+    }
+  };
+  if(catMap[file]) catMap[file]();
+  else{ printLine(`cat: ${file}: No such file or directory`,'tl-err'); giveHint(raw); }
+}
+function execSimulated(canonicalCmd,raw){
+  const flat=flatMissions();
+  const targetM=flat.find(m=>
+    m.command===canonicalCmd||
+    (m.aliases&&m.aliases.some(a=>normalize(raw)===normalize(a)))
+  );
+  if(!targetM){ printLine(`Unexpected command in current context.`,'tl-err'); return; }
+  targetM.simulate().forEach(([text,cls])=>printLine(text,cls));
+  tryComplete(canonicalCmd,raw);
+}
+// ── COMPLETION LOGIC ──────────────────────────────────
+function tryComplete(canonicalCmd,rawInput){
+  if(!S.currentMissionId) return;
+  const {mission:m}=getMissionById(S.currentMissionId);
+  if(!m) return;
+  const eNorm=normalize(m.command);
+  const iNorm=normalize(rawInput);
+  const aliasHit=m.aliases&&m.aliases.some(a=>normalize(a)===iNorm||iNorm.startsWith(a.split(' ')[0]));
+  const isMatch=iNorm===eNorm||
+    (iNorm.startsWith(eNorm.split(' ')[0])&&canonicalCmd===m.command)||
+    aliasHit||
+    canonicalCmd===m.command;
+  if(!isMatch) return;
+  if(isCompleted(m.id)) return;
+  printLine('','tl-empty');
+  printLine('✓ '+m.successMsg,'tl-ok');
+  S.completedIds.push(m.id);
+  saveState();
+  revealNotebookFor(m.id);
+  const out=document.getElementById('term-out');
+  out.classList.remove('flash-success');
+  void out.offsetWidth;
+  out.classList.add('flash-success');
+  const flat=flatMissions();
+  const idx=flat.findIndex(fm=>fm.id===m.id);
+  renderSidebar();
+  if(idx<flat.length-1){
+    const next=flat[idx+1];
+    setTimeout(()=>{
+      S.currentMissionId=next.id;
+      saveState();
+      printLine('','tl-empty');
+      printSep(`▶ ${next.chapter.num} — ${next.step}: ${next.name}`);
+      printLine('','tl-empty');
+      printLine(next.story,'tl-story');
+      printLine('','tl-empty');
+      renderBriefing(next.id);
+      renderSidebar();
+      document.getElementById('term-in').focus();
+    }, 600);
+  } else {
+    setTimeout(()=>showMissionComplete(), 900);
+  }
+}
+function giveHint(rawInput){
+  if(!S.currentMissionId) return;
+  const {mission:m}=getMissionById(S.currentMissionId);
+  if(!m) return;
+  printLine('','tl-empty');
+  printLine(`Hint: This objective requires the '${m.command.split(' ')[0]}' command.`,'tl-hint');
+  printLine(`Try: ${m.command}`,'tl-hint');
+}
+function showHelp(){
+  printLine('Available commands:','tl-info');
+  [
+    ['pwd', 'print working directory'],
+    ['ls', 'list files'],
+    ['ls -a', 'list including hidden files'],
+    ['cd <dir>', 'change directory'],
+    ['cat <file>', 'read file contents'],
+    ['nmap <ip>', 'scan open ports on target'],
+    ["echo '...' | base64 -d", 'decode a base64 string'],
+    ['ssh user@ip', 'connect via SSH'],
+    ['exiftool <file>', 'extract image metadata'],
+    ['whois <domain>', 'query domain registration info'],
+    ['history', 'show command history'],
+    ['clear', 'clear the terminal (manual only)'],
+    ['whoami', 'show current user'],
+  ].forEach(([cmd,desc])=>printLine(` ${cmd.padEnd(28)} — ${desc}`,'tl-muted'));
+  if(S.currentMissionId){
+    const {mission:m}=getMissionById(S.currentMissionId);
+    printLine('','tl-empty');
+    printLine(`Current objective: ${m.command}`,'tl-hint');
+  }
+}
+// ══ MISSION COMPLETE ═════════════════════════════════
+function showMissionComplete(){
+  document.getElementById('mission-complete').classList.add('show');
+}
+function resetMission(){
+  S=defaultState(); saveState();
+  document.getElementById('mission-complete').classList.remove('show');
+  init();
+}
+// ── INPUT EVENTS ──────────────────────────────────────
+document.getElementById('term-in').addEventListener('keydown',e=>{
+  if(e.key==='Enter'){
+    const v=e.target.value; e.target.value=''; handleInput(v);
+  } else if(e.key==='ArrowUp'){
+    e.preventDefault();
+    if(histIdx<cmdHistory.length-1){histIdx++;e.target.value=cmdHistory[histIdx]||'';}
+  } else if(e.key==='ArrowDown'){
+    e.preventDefault();
+    if(histIdx>0){histIdx--;e.target.value=cmdHistory[histIdx]||'';}
+    else{histIdx=-1;e.target.value='';}
+  } else if(e.key==='Tab'){
+    e.preventDefault();
+    const v=e.target.value;
+    const cmds=['pwd','ls','cd','cat','nmap','echo','ssh','exiftool','whois','history','clear','whoami','help','mkdir'];
+    const match=cmds.find(c=>c.startsWith(v)&&c!==v);
+    if(match) e.target.value=match+' ';
+  }
+});
+document.getElementById('terminal-wrap').addEventListener('click',()=>document.getElementById('term-in').focus());
+// ═══════════════════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════════════════
+function init(){
+  cwd='/home/operator';
+  updatePrompt();
+  rebuildNotebook();
+  renderSidebar();
+  const startId=S.currentMissionId||CHAPTERS[0].missions[0].id;
+  renderBriefing(startId);
+  clearTerm();
+  printLine('OPERATION: GHOST SIGNAL','tl-bright');
+  printLine('CyberLab Training Platform — Secure Sandbox v2','tl-muted');
+  printLine('─'.repeat(54),'tl-div');
+  printLine('','tl-empty');
+  printLine('An unknown threat actor has breached an internal server.','tl-story');
+  printLine('Sensitive data was exfiltrated. Your mission: trace it back','tl-story');
+  printLine('to the source and identify the responsible individual.','tl-story');
+  printLine('','tl-empty');
+  printLine("Type 'help' to see all available commands.",'tl-muted');
+  printLine('The notebook in the corner will track your intel automatically.','tl-muted');
+  printLine('','tl-empty');
+  printSep(`▶ ${CHAPTERS[0].num} — ${CHAPTERS[0].missions[0].step}: ${CHAPTERS[0].missions[0].name}`);
+  printLine('','tl-empty');
+  printLine(CHAPTERS[0].missions[0].story,'tl-story');
+  printLine('','tl-empty');
+  document.getElementById('term-in').focus();
+}
+init();
+</script>
+</body>
+</html>
